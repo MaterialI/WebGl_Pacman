@@ -1,0 +1,76 @@
+
+<!DOCTYPE html>
+<html>
+    <script id="vertex-shader1" type="x-shader/x-vertex">
+        precision mediump float;
+        attribute vec2 vPosition;
+        uniform vec2 mvPosition;
+        uniform vec2 vMovement;
+        uniform bool translated;
+        uniform float delta;
+        uniform vec3 vColour;
+        varying vec3 fragColor;
+        void main()
+        {
+            gl_PointSize = 10.0;
+            fragColor = vColour;
+            if(translated == false)
+                gl_Position = vec4(vPosition,0.0,1.0);
+            else
+                gl_Position = vec4(vPosition, 0.0,1.0)+ vec4(0.0,delta, 0.0,0.0 );
+        }
+    
+    </script>
+    
+    <script id="fragment-shader1" type="x-shader/x-fragment">
+    
+     
+        precision mediump float;
+        varying vec3 fragColor;
+        void main()
+        {
+            gl_FragColor = vec4(fragColor , 1.0 );
+        }
+    </script>
+    
+<script id="vertex-shader" type="x-shader/x-vertex">
+    precision mediump float;
+    attribute vec2 vPosition;
+    attribute vec3 vColor;
+    varying vec3 fragColor;
+    void main()
+    {
+        gl_PointSize = 7.0;
+        fragColor = vColor;
+        gl_Position = vec4(vPosition,0.0,1.0);
+    }
+
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+
+ 
+    precision mediump float;
+    varying vec3 fragColor;
+    void main()
+    {
+        gl_FragColor = vec4(fragColor , 1.0 );
+    }
+</script>
+
+<script type="text/javascript" src="./Common/webgl-utils.js"></script>
+<script type="text/javascript" src="./Common/initShaders.js"></script>
+<script type="text/javascript" src="./Common/MV.js"></script>
+<script type = "module" src = "./gameObjects.js"></script>
+<script type="module" src="./gameBody.js"></script>
+
+
+<body>
+    <p>
+    <h4  id = "gameTimer">12</h4>
+    <h4 id = "gameScore">3</h4></p>
+<canvas id="gl-canvas" width="450" height="500">>
+Oops ... your browser doesn't support the HTML5 canvas element
+</canvas>
+</body>
+</html>
