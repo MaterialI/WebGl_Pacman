@@ -1,17 +1,21 @@
 // // //define the graphics here
 // // //draw the objects and world
 // // //objects will be imported from other file like gameMechanics, where the data will get generated.
-import { vertices, squares, dots, pacman, centralBox } from "./gameObjects.js";
+import { vertices, squares, dots, pacman, lines } from "./gameObjects.js";
 // // Global variables
 console.log(squares);
+var dPx;
+var dPy;
 var playerBufferId;
 var canvas;
-var program, program1;
+var program;
 var ptsToBeDrawn = []; //draw buffer
 var Dvertices = []; //used to make the transformations on the vertices
 var Dsquares = []; //draw and transformation buffer
-var Dpacman = [];
+var Dpacman = []; //draw pacman vertices
+var Dlines = lines;
 var pacmanPosition;
+var Dposition = vec2(0.0, 0.0);
 var gl;
 var keyDown = 0,
   keyUp = 0,
@@ -30,11 +34,60 @@ function getKey(key) {
   else keyRight = 0;
 }
 
-function updatePacmanPosition(loc) {
-  pacmanPosition = loc;
-  Dpacman[0] = vec2(loc[0], loc[1] + 0.084);
-  Dpacman[1] = vec2(loc[0] + 0.0748, loc[1] - 0.052);
-  Dpacman[2] = vec2(loc[0] + 0.0748, loc[1] - 0.052);
+function searchForValidP() {
+  if (keyUp) {
+    // vertical up
+    if (pacman.row == 0) return false;
+    if (dots[pacman.row - 1][pacman.column].valid == true) return true;
+    else return false;
+  }
+  if (keyDown) {
+    // vertical down
+    if (pacman.row == 9) return false;
+    if (dots[pacman.row + 1][pacman.column].valid == true) return true;
+    else return false;
+  }
+  if (keyLeft) {
+    // horizontal left
+    if (pacman.column == 0) return false;
+    if (dots[pacman.row][pacman.column - 1].valid == true) return true;
+    else return false;
+  }
+  if (keyRight) {
+    // horizontal left
+    if (pacman.column == 8) return false;
+    if (dots[pacman.row][pacman.column + 1].valid == true) return true;
+    else return false;
+  }
+}
+
+function updatePacmanPosition() {
+  if (keyUp == 1 && searchForValidP()) {
+    pacman.row -= 1;
+    dots[pacman.row][pacman.column].visited = true;
+    Dposition[1] += dPy;
+  }
+  if (keyDown == 1 && searchForValidP()) {
+    pacman.row += 1;
+    dots[pacman.row][pacman.column].visited = true;
+    Dposition[1] -= dPy;
+  }
+  if (keyLeft == 1 && searchForValidP()) {
+    pacman.column -= 1;
+    dots[pacman.row][pacman.column].visited = true;
+    Dposition[0] -= dPx;
+  }
+  if (keyRight == 1 && searchForValidP()) {
+    pacman.column += 1;
+    dots[pacman.row][pacman.column].visited = true;
+    Dposition[0] += dPx;
+  }
+}
+
+function validMove() {
+  if (keyUp == 1) {
+    if (pacman.level == 0) return false;
+  }
 }
 
 window.onload = function init() {
@@ -55,17 +108,26 @@ window.onload = function init() {
   Dpacman[0] = pacman.top;
   Dpacman[1] = pacman.br;
   Dpacman[2] = pacman.bl;
+
   pacmanPosition = pacman.position;
+
   pacmanPosition[0] =
     (pacmanPosition[0] - canvas.width / 2) / (canvas.width / 2);
   pacmanPosition[1] =
     ((pacmanPosition[1] - canvas.height / 2) / (canvas.height / 2)) * -1;
+
   for (let i = 0; i < 3; i++) {
     Dpacman[i][0] = (Dpacman[i][0] - canvas.width / 2) / (canvas.width / 2);
     Dpacman[i][1] =
       ((Dpacman[i][1] - canvas.height / 2) / (canvas.height / 2)) * -1;
   }
-  console.log(Dpacman);
+
+  //lines for central box
+  for (let i = 0; i < lines.length; i++) {
+    Dlines[i][0] = (lines[i][0] - canvas.width / 2) / (canvas.width / 2);
+    Dlines[i][1] =
+      ((lines[i][1] - canvas.height / 2) / (canvas.height / 2)) * -1;
+  }
   //add the points to the vertices to be drawn
   for (let i = 0; i < vertices.length; i++)
     for (let j = 0; j < vertices[i].length; j++) Dvertices.push(vertices[i][j]);
@@ -101,10 +163,12 @@ window.onload = function init() {
     Dsquares[i][1] =
       ((Dsquares[i][1] - canvas.height / 2) / (canvas.height / 2)) * -1;
   }
-  //for (let i = 0; i < 3; i++) Dsquares.push(Dpacman[i]);
-  //console.log(Dsquares);
   //======================================================
 
+  dPx = dots[9][5].position[0] - dots[9][4].position[0];
+  dPy = dots[8][5].position[1] - dots[9][5].position[1];
+  console.log(dPx);
+  console.log(dPy);
   // Load shaders and initialize attribute buffers
   // program = initShaders(gl, "vertex-shader", "fragment-shader");
   program = initShaders(gl, "vertex-shader1", "fragment-shader1");
@@ -112,17 +176,29 @@ window.onload = function init() {
 
   requestAnimationFrame(render);
 };
-
+var count = 0;
 function render() {
   //gl.useProgram(program);
-
+  count++;
   //to update the points according to the location visited
   // Load the data into the GPU ============================
   //update the draw field
-  if (keyUp == 1) {
-    updatePacmanPosition(vec2(pacmanPosition[0], pacmanPosition[1] + 0.1));
+  console.log(Dposition);
+  if (count == 60) {
+    if (keyUp == 1) {
+      updatePacmanPosition();
+    }
+    if (keyDown == 1) {
+      updatePacmanPosition();
+    }
+    if (keyLeft == 1) {
+      updatePacmanPosition();
+    }
+    if (keyRight == 1) {
+      updatePacmanPosition();
+    }
+    count = 0;
   }
-
   ptsToBeDrawn = [];
   for (let i = 0; i < 10; i++)
     for (let j = 0; j < dots[i].length; j++)
@@ -146,7 +222,7 @@ function render() {
   var playerSpecialUniform = gl.getUniformLocation(program, "translated");
   gl.uniform1i(playerSpecialUniform, true);
   var playerDelta = gl.getUniformLocation(program, "delta");
-  gl.uniform1f(playerDelta, 0.4);
+  gl.uniform2fv(playerDelta, Dposition);
   var pointColorUniform = gl.getUniformLocation(program, "vColour");
   gl.uniform3fv(pointColorUniform, [1.0, 0.9, 0.0]);
 
