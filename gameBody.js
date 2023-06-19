@@ -1,7 +1,20 @@
 // // //define the graphics here
 // // //draw the objects and world
 // // //objects will be imported from other file like gameMechanics, where the data will get generated.
-import { vertices, squares, dots, pacman, lines } from "./gameObjects.js";
+import {
+  vertices,
+  squares,
+  dots,
+  pacman,
+  lines,
+  ghost1,
+  ghost2,
+  dotsG,
+  setUpAdjacencyGraph,
+  graph,
+  assignDots,
+} from "./gameObjects.js";
+import { dfs, updateGhostPosition } from "./ghostAI.js";
 // // Global variables
 console.log(squares);
 var dPx;
@@ -9,13 +22,17 @@ var dPy;
 var playerBufferId;
 var canvas;
 var program;
-var ptsToBeDrawn = []; //draw buffer
+var ptsToBeDrawn = []; // points draw buffer
 var Dvertices = []; //used to make the transformations on the vertices
 var Dsquares = []; //draw and transformation buffer
 var Dpacman = []; //draw pacman vertices
+var Dghost1 = [ghost1.tl, ghost1.tr, ghost1.br, ghost1.bl];
+var Dghost2 = [ghost2.tl, ghost2.tr, ghost2.br, ghost2.bl];
 var Dlines = lines;
 var pacmanPosition;
 var Dposition = vec2(0.0, 0.0);
+var Dghost1pos = vec2(0.0, 0.0);
+var Dghost2pos = vec2(0.0, 0.0);
 var gl;
 var keyDown = 0,
   keyUp = 0,
@@ -33,60 +50,51 @@ function getKey(key) {
   if (key.key == "ArrowRight") keyRight = 1;
   else keyRight = 0;
 }
-
-function searchForValidP() {
-  if (keyUp) {
-    // vertical up
-    if (pacman.row == 0) return false;
-    if (dots[pacman.row - 1][pacman.column].valid == true) return true;
+function searchForValidP(object, dotsArray) {
+  if (keyUp == 1) {
+    if (object.row == 0) return false;
+    if (dotsArray[object.row - 1][object.column].valid == true) return true;
     else return false;
   }
-  if (keyDown) {
-    // vertical down
-    if (pacman.row == 9) return false;
-    if (dots[pacman.row + 1][pacman.column].valid == true) return true;
+  if (keyDown == 1) {
+    if (object.row == 9) return false;
+    if (dotsArray[object.row + 1][object.column].valid == true) return true;
     else return false;
   }
-  if (keyLeft) {
-    // horizontal left
-    if (pacman.column == 0) return false;
-    if (dots[pacman.row][pacman.column - 1].valid == true) return true;
+  if (keyLeft == 1) {
+    if (object.column == 0) return false;
+    if (dotsArray[object.row][object.column - 1].valid == true) return true;
     else return false;
   }
-  if (keyRight) {
-    // horizontal left
-    if (pacman.column == 8) return false;
-    if (dots[pacman.row][pacman.column + 1].valid == true) return true;
+  if (keyRight == 1) {
+    if (object.column == 8) return false;
+    if (dotsArray[object.row][object.column + 1].valid == true) return true;
     else return false;
   }
 }
 
 function updatePacmanPosition() {
-  if (keyUp == 1 && searchForValidP()) {
-    pacman.row -= 1;
-    dots[pacman.row][pacman.column].visited = true;
-    Dposition[1] += dPy;
-  }
-  if (keyDown == 1 && searchForValidP()) {
-    pacman.row += 1;
-    dots[pacman.row][pacman.column].visited = true;
-    Dposition[1] -= dPy;
-  }
-  if (keyLeft == 1 && searchForValidP()) {
-    pacman.column -= 1;
-    dots[pacman.row][pacman.column].visited = true;
-    Dposition[0] -= dPx;
-  }
-  if (keyRight == 1 && searchForValidP()) {
-    pacman.column += 1;
-    dots[pacman.row][pacman.column].visited = true;
-    Dposition[0] += dPx;
-  }
-}
-
-function validMove() {
-  if (keyUp == 1) {
-    if (pacman.level == 0) return false;
+  if (searchForValidP(pacman, dots)) {
+    if (keyUp == 1) {
+      pacman.row -= 1;
+      dots[pacman.row][pacman.column].visited = true;
+      Dposition[1] += dPy;
+    }
+    if (keyDown == 1) {
+      pacman.row += 1;
+      dots[pacman.row][pacman.column].visited = true;
+      Dposition[1] -= dPy;
+    }
+    if (keyLeft == 1) {
+      pacman.column -= 1;
+      dots[pacman.row][pacman.column].visited = true;
+      Dposition[0] -= dPx;
+    }
+    if (keyRight == 1) {
+      pacman.column += 1;
+      dots[pacman.row][pacman.column].visited = true;
+      Dposition[0] += dPx;
+    }
   }
 }
 
@@ -110,6 +118,17 @@ window.onload = function init() {
   Dpacman[2] = pacman.bl;
 
   pacmanPosition = pacman.position;
+
+  for (let i = 0; i < 4; i++) {
+    Dghost1[i][0] = (Dghost1[i][0] - canvas.width / 2) / (canvas.width / 2);
+    Dghost1[i][1] =
+      ((Dghost1[i][1] - canvas.height / 2) / (canvas.height / 2)) * -1;
+  }
+  for (let i = 0; i < 4; i++) {
+    Dghost2[i][0] = (Dghost2[i][0] - canvas.width / 2) / (canvas.width / 2);
+    Dghost2[i][1] =
+      ((Dghost2[i][1] - canvas.height / 2) / (canvas.height / 2)) * -1;
+  }
 
   pacmanPosition[0] =
     (pacmanPosition[0] - canvas.width / 2) / (canvas.width / 2);
@@ -165,12 +184,24 @@ window.onload = function init() {
   }
   //======================================================
 
+  assignDots();
+  dotsG[4][4].valid = true;
+  dotsG[5][4].valid = true;
+  setUpAdjacencyGraph();
+  console.log(graph);
   dPx = dots[9][5].position[0] - dots[9][4].position[0];
   dPy = dots[8][5].position[1] - dots[9][5].position[1];
-  console.log(dPx);
-  console.log(dPy);
+  console.log(dPx, dPy);
+  const gr = {
+    A: ["B", "C"],
+    B: ["A", "C", "D"],
+    C: ["A", "B", "D"],
+    D: ["B", "C"],
+  };
+  //bfs(gr, `${(ghost1.row, ghost1.column)}`, `${(pacman.row, pacman.column)}`);
+  // console.log(dfs(graph, "44", "94"));
   // Load shaders and initialize attribute buffers
-  // program = initShaders(gl, "vertex-shader", "fragment-shader");
+
   program = initShaders(gl, "vertex-shader1", "fragment-shader1");
   gl.useProgram(program);
 
@@ -183,8 +214,11 @@ function render() {
   //to update the points according to the location visited
   // Load the data into the GPU ============================
   //update the draw field
-  console.log(Dposition);
-  if (count == 60) {
+  // console.log(Dposition);
+  // console.log(`${ghost1.row}${ghost1.column}`, `${pacman.row}${pacman.column}`);
+  if (count == 30) {
+    updateGhostPosition(ghost1);
+    console.log(Dghost1pos);
     if (keyUp == 1) {
       updatePacmanPosition();
     }
@@ -231,6 +265,54 @@ function render() {
 
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 
+  //draw a ghost1
+  playerBufferId = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, playerBufferId);
+  gl.bufferData(gl.ARRAY_BUFFER, flatten(Dghost1), gl.STATIC_DRAW);
+  var playerPositionAttribLocation = gl.getAttribLocation(program, "vPosition");
+
+  gl.vertexAttribPointer(
+    playerPositionAttribLocation,
+    2,
+    gl.FLOAT,
+    false,
+    0,
+    0
+  );
+  gl.enableVertexAttribArray(playerPositionAttribLocation);
+  var playerSpecialUniform = gl.getUniformLocation(program, "translated");
+  gl.uniform1i(playerSpecialUniform, true);
+  var playerDelta = gl.getUniformLocation(program, "delta");
+  gl.uniform2fv(playerDelta, Dghost1pos);
+  var pointColorUniform = gl.getUniformLocation(program, "vColour");
+  gl.uniform3fv(pointColorUniform, [1.0, 0.0, 0.0]);
+
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  //draw a ghost2
+  playerBufferId = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, playerBufferId);
+  gl.bufferData(gl.ARRAY_BUFFER, flatten(Dghost2), gl.STATIC_DRAW);
+  var playerPositionAttribLocation = gl.getAttribLocation(program, "vPosition");
+
+  gl.vertexAttribPointer(
+    playerPositionAttribLocation,
+    2,
+    gl.FLOAT,
+    false,
+    0,
+    0
+  );
+  gl.enableVertexAttribArray(playerPositionAttribLocation);
+  var playerSpecialUniform = gl.getUniformLocation(program, "translated");
+  gl.uniform1i(playerSpecialUniform, true);
+  var playerDelta = gl.getUniformLocation(program, "delta");
+  gl.uniform2fv(playerDelta, Dghost2pos);
+  var pointColorUniform = gl.getUniformLocation(program, "vColour");
+  gl.uniform3fv(pointColorUniform, [0.0, 1.0, 0.0]);
+
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+
   //draw points
   var pointBufferId = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBufferId);
@@ -273,3 +355,5 @@ function render() {
   //run the animation loop
   requestAnimationFrame(render);
 }
+
+export { searchForValidP, Dghost1pos };

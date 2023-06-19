@@ -3,11 +3,10 @@
 class Player {
   constructor(position, score) {
     this.position = position;
-    this.dir = 0; //clock movement
     this.top = vec2(position[0], position[1] - 21);
     this.bl = vec2(position[0] - 17, position[1] + 13);
     this.br = vec2(position[0] + 17, position[1] + 13);
-    this.score = score;
+    this.score = 0;
     this.colour = vec3(255 / 255, 192 / 255, 0 / 255);
     this.row = 9;
     this.column = 4;
@@ -23,6 +22,19 @@ class Dot {
   }
 }
 
+class Ghost {
+  constructor(position, row, column) {
+    this.position = position;
+    this.dir = 0; //clock movement
+    this.tl = vec2(position[0] - 20, position[1] - 20);
+    this.tr = vec2(position[0] + 20, position[1] - 20);
+    this.bl = vec2(position[0] - 20, position[1] + 20);
+    this.br = vec2(position[0] + 20, position[1] + 20);
+    this.score = 0;
+    this.row = row;
+    this.column = column;
+  }
+}
 //-----------------
 //large box class ds x = 150 y = 100
 class BoxL {
@@ -60,6 +72,9 @@ var smallB3 = new BoxS(vec2(375, 250), vec3(1.0, 0.5, 0.0)); //boxS3
 //global exported arrays
 let Boxes = [largeB1, largeB2, largeB3, largeB4, smallB1, smallB3];
 var pacman = new Player(vec2(225, 475), 0);
+
+var ghost1 = new Ghost(vec2(225, 225), 4, 4);
+var ghost2 = new Ghost(vec2(225, 275), 5, 4);
 //to be decided which form to pass
 let dots = [
   //1-st layer
@@ -183,6 +198,8 @@ let dots = [
     new Dot(vec2(425, 475), true),
   ],
 ];
+
+var dotsG = [];
 dots[9][4].visited = true;
 var squares = Boxes.map((obj) => [
   obj.tl,
@@ -194,4 +211,57 @@ var squares = Boxes.map((obj) => [
 ]);
 var lines = [centralBox.tl, centralBox.tr, centralBox.br, centralBox.bl];
 var vertices = dots.map((row) => row.map((obj) => obj.position));
-export { vertices, squares, dots, pacman, centralBox, lines };
+
+var graph = {};
+function setUpAdjacencyGraph() {
+  for (let i = 0; i < 10; i++)
+    for (let j = 0; j < 9; j++) {
+      if (dots[i][j].valid != false) {
+        if (j != 0)
+          if (dotsG[i][j - 1].valid) addEdge(`${i}${j}`, `${i}${j - 1}`);
+        if (j != 8)
+          if (dotsG[i][j + 1].valid) addEdge(`${i}${j}`, `${i}${j + 1}`);
+        if (i != 9)
+          if (dotsG[i + 1][j].valid) addEdge(`${i}${j}`, `${i + 1}${j}`);
+        if (i != 0)
+          if (dotsG[i - 1][j].valid) addEdge(`${i}${j}`, `${i - 1}${j}`);
+      }
+    }
+}
+
+// Function to add an edge between two nodes
+function addEdge(value, value1) {
+  if (!graph.hasOwnProperty(value)) {
+    graph[value] = [];
+  }
+
+  if (!graph.hasOwnProperty(value1)) {
+    graph[value1] = [];
+  }
+
+  if (!graph[value].includes(value1)) {
+    graph[value].push(value1);
+  }
+
+  if (!graph[value1].includes(value)) {
+    graph[value1].push(value);
+  }
+}
+
+function assignDots() {
+  dotsG = [...dots];
+}
+export {
+  vertices,
+  squares,
+  dots,
+  pacman,
+  centralBox,
+  lines,
+  ghost1,
+  ghost2,
+  dotsG,
+  setUpAdjacencyGraph,
+  graph,
+  assignDots,
+};
