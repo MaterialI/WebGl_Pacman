@@ -7,9 +7,14 @@ class Player {
     this.bl = vec2(position[0] - 17, position[1] + 13);
     this.br = vec2(position[0] + 17, position[1] + 13);
     this.score = 0;
-    this.colour = vec3(255 / 255, 192 / 255, 0 / 255);
     this.row = 9;
     this.column = 4;
+    this.Dposition = vec2(0.0, 0.0);
+    this.Dpacman = [
+      vec2(position[0], position[1] - 21),
+      vec2(position[0] - 17, position[1] + 13),
+      vec2(position[0] + 17, position[1] + 13),
+    ];
   }
 }
 
@@ -25,7 +30,6 @@ class Dot {
 class Ghost {
   constructor(position, row, column) {
     this.position = position;
-    this.dir = 0; //clock movement
     this.tl = vec2(position[0] - 20, position[1] - 20);
     this.tr = vec2(position[0] + 20, position[1] - 20);
     this.bl = vec2(position[0] - 20, position[1] + 20);
@@ -199,7 +203,128 @@ let dots = [
   ],
 ];
 
-var dotsG = [];
+var dotsG = [
+  //1-st layer
+  [
+    new Dot(vec2(25, 25), true),
+    new Dot(vec2(75, 25), true),
+    new Dot(vec2(125, 25), true),
+    new Dot(vec2(175, 25), true),
+    new Dot(vec2(225, 25), true),
+    new Dot(vec2(275, 25), true),
+    new Dot(vec2(325, 25), true),
+    new Dot(vec2(375, 25), true),
+    new Dot(vec2(425, 25), true),
+  ],
+  //2nd layer
+  [
+    new Dot(vec2(25, 75), true),
+    new Dot(vec2(75, 75), false),
+    new Dot(vec2(125, 75), false),
+    new Dot(vec2(175, 75), false),
+    new Dot(vec2(225, 75), true),
+    new Dot(vec2(275, 75), false),
+    new Dot(vec2(325, 75), false),
+    new Dot(vec2(375, 75), false),
+    new Dot(vec2(425, 75), true),
+  ],
+  //3rd layer
+  [
+    new Dot(vec2(25, 125), true),
+    new Dot(vec2(75, 125), false),
+    new Dot(vec2(125, 125), false),
+    new Dot(vec2(175, 125), false),
+    new Dot(vec2(225, 125), true),
+    new Dot(vec2(275, 125), false),
+    new Dot(vec2(325, 125), false),
+    new Dot(vec2(375, 125), false),
+    new Dot(vec2(425, 125), true),
+  ],
+  //4thlayer
+  [
+    new Dot(vec2(25, 175), true),
+    new Dot(vec2(75, 175), true),
+    new Dot(vec2(125, 175), true),
+    new Dot(vec2(175, 175), true),
+    new Dot(vec2(225, 175), true),
+    new Dot(vec2(275, 175), true),
+    new Dot(vec2(325, 175), true),
+    new Dot(vec2(375, 175), true),
+    new Dot(vec2(425, 175), true),
+  ],
+  //5thlayer
+  [
+    new Dot(vec2(25, 225), true),
+    new Dot(vec2(75, 225), false),
+    new Dot(vec2(125, 225), true),
+    new Dot(vec2(175, 225), true),
+    new Dot(vec2(225, 225), true),
+    new Dot(vec2(275, 225), true),
+    new Dot(vec2(325, 225), true),
+    new Dot(vec2(375, 225), false),
+    new Dot(vec2(425, 225), true),
+  ],
+  //6layer
+  [
+    new Dot(vec2(25, 275), true),
+    new Dot(vec2(75, 275), false),
+    new Dot(vec2(125, 275), true),
+    new Dot(vec2(175, 275), true),
+    new Dot(vec2(225, 275), true),
+    new Dot(vec2(275, 275), true),
+    new Dot(vec2(325, 275), true),
+    new Dot(vec2(375, 275), false),
+    new Dot(vec2(425, 275), true),
+  ],
+  //7th layer
+  [
+    new Dot(vec2(25, 325), true),
+    new Dot(vec2(75, 325), true),
+    new Dot(vec2(125, 325), true),
+    new Dot(vec2(175, 325), true),
+    new Dot(vec2(225, 325), true),
+    new Dot(vec2(275, 325), true),
+    new Dot(vec2(325, 325), true),
+    new Dot(vec2(375, 325), true),
+    new Dot(vec2(425, 325), true),
+  ],
+  //8th layer
+  [
+    new Dot(vec2(25, 375), true),
+    new Dot(vec2(75, 375), false),
+    new Dot(vec2(125, 375), false),
+    new Dot(vec2(175, 375), false),
+    new Dot(vec2(225, 375), true),
+    new Dot(vec2(275, 375), false),
+    new Dot(vec2(325, 375), false),
+    new Dot(vec2(375, 375), false),
+    new Dot(vec2(425, 375), true),
+  ],
+  //9th layer
+  [
+    new Dot(vec2(25, 425), true),
+    new Dot(vec2(75, 425), false),
+    new Dot(vec2(125, 425), false),
+    new Dot(vec2(175, 425), false),
+    new Dot(vec2(225, 425), true),
+    new Dot(vec2(275, 425), false),
+    new Dot(vec2(325, 425), false),
+    new Dot(vec2(375, 425), false),
+    new Dot(vec2(425, 425), true),
+  ],
+  //10th layer
+  [
+    new Dot(vec2(25, 475), true),
+    new Dot(vec2(75, 475), true),
+    new Dot(vec2(125, 475), true),
+    new Dot(vec2(175, 475), true),
+    new Dot(vec2(225, 475), true),
+    new Dot(vec2(275, 475), true),
+    new Dot(vec2(325, 475), true),
+    new Dot(vec2(375, 475), true),
+    new Dot(vec2(425, 475), true),
+  ],
+];
 dots[9][4].visited = true;
 var squares = Boxes.map((obj) => [
   obj.tl,
@@ -248,9 +373,6 @@ function addEdge(value, value1) {
   }
 }
 
-function assignDots() {
-  dotsG = [...dots];
-}
 export {
   vertices,
   squares,
@@ -261,7 +383,6 @@ export {
   ghost1,
   ghost2,
   dotsG,
-  setUpAdjacencyGraph,
   graph,
-  assignDots,
+  setUpAdjacencyGraph,
 };
