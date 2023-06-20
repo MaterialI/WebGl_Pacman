@@ -1,46 +1,65 @@
-import { pacman, ghost1, ghost2, dots, dotsG, graph } from "./gameObjects.js";
+import { pacman, ghost1, ghost2, graph } from "./gameObjects.js";
 import { searchForValidP, Dghost1pos } from "./gameBody.js";
 //const destinationNode = dotsG[pacman.position[0]][pacman.position[1]];
 var path = [];
+var path1 = [];
 var dPx = 0.2222222222222222;
 var dPy = 0.20000000000000007;
 function updateGhostPosition(ghost) {
+  //call the path-finding algorithm
   path = bfs(
     graph,
     `${ghost.row}${ghost.column}`,
     `${pacman.row}${pacman.column}`
   );
-  // console.log(path[0][0], path[0][1]);
-  // if (path[0][0] == ghost.row && path[0][1] == ghost.column) {
-  //   console.log("removed");
-  //   path.shift();
-  // }
+  //fetch a move from list we take from the generated list
   path.shift();
-  console.log(path);
   var move = path.shift();
-  //if (move[0] == ghost.row && move[1] == ghost.column) move = path.shift();
-  console.log(path);
-  console.log(move);
-  //console.log(ghost.row - move[0]);
+  //make a move corresponding to the generated move
   if (ghost.row - move[0] > 0) {
     ghost.row -= 1;
-    //dots[ghost.row][ghost.column].visited = true;
-    Dghost1pos[1] += dPy;
+    ghost.Dghostpos[1] += dPy;
   }
   if (ghost.row - move[0] < 0) {
     ghost.row += 1;
-    //dots[ghost.row][ghost.column].visited = true;
-    Dghost1pos[1] -= dPy;
+    ghost.Dghostpos[1] -= dPy;
   }
   if (ghost.column - move[1] > 0) {
     ghost.column -= 1;
-    // dots[ghost.row][ghost.column].visited = true;
-    Dghost1pos[0] -= dPx;
+    ghost.Dghostpos[0] -= dPx;
   }
   if (ghost.column - move[1] < 0) {
     ghost.column += 1;
-    //dots[ghost.row][ghost.column].visited = true;
-    Dghost1pos[0] += dPx;
+    ghost.Dghostpos[0] += dPx;
+  }
+}
+function updateGhostPosition1(ghost) {
+  //call the path-finding algorithm
+  path1 = dfs(
+    graph,
+    `${ghost.row}${ghost.column}`,
+    `${pacman.row}${pacman.column}`
+  );
+  console.log(path1);
+  //fetch a move from list we take from the generated list
+  path1.shift();
+  var move = path1.shift();
+  //make a move corresponding to the generated move
+  if (ghost.row - move[0] > 0) {
+    ghost.row -= 1;
+    ghost.Dghostpos[1] += dPy;
+  }
+  if (ghost.row - move[0] < 0) {
+    ghost.row += 1;
+    ghost.Dghostpos[1] -= dPy;
+  }
+  if (ghost.column - move[1] > 0) {
+    ghost.column -= 1;
+    ghost.Dghostpos[0] -= dPx;
+  }
+  if (ghost.column - move[1] < 0) {
+    ghost.column += 1;
+    ghost.Dghostpos[0] += dPx;
   }
 }
 
@@ -51,7 +70,6 @@ function dfs(graph, start, target, visited = [], path = []) {
   if (start === target) {
     return path;
   }
-  //console.log(start);
   for (let neighbor of graph[start]) {
     if (!visited.includes(neighbor)) {
       const result = dfs(graph, neighbor, target, visited, path);
@@ -83,7 +101,6 @@ function bfs(adjacencyList, start, finish) {
 
     // Check if the current node is the target node
     if (current === finish) {
-      //path.shift();
       return path; // Return the path if target found
     }
 
@@ -99,6 +116,5 @@ function bfs(adjacencyList, start, finish) {
 
   return null; // Return null if path not found
 }
-// Example usage:
 
-export { updateGhostPosition, dfs };
+export { updateGhostPosition, updateGhostPosition1, dfs };

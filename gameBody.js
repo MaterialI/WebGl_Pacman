@@ -9,26 +9,29 @@ import {
   lines,
   ghost1,
   ghost2,
-  dotsG,
   setUpAdjacencyGraph,
   graph,
 } from "./gameObjects.js";
-import { dfs, updateGhostPosition } from "./ghostAI.js";
+import { dfs, updateGhostPosition, updateGhostPosition1 } from "./ghostAI.js";
 // // Global variables
 console.log(squares);
 var dPx;
 var dPy;
 var playerBufferId;
+var ghost1BufferID;
+var ghost2BufferID;
+
 var canvas;
 var program;
 var ptsToBeDrawn = []; // points draw buffer with updates of the eaten/non-eaten points
 var Dvertices = []; //used to make the transformations on the vertices
 var Dsquares = []; //draw and transformation buffer
-var Dghost1 = [ghost1.tl, ghost1.tr, ghost1.br, ghost1.bl];
-var Dghost2 = [ghost2.tl, ghost2.tr, ghost2.br, ghost2.bl];
+var Dghost1 = ghost1.Dghost;
+var Dghost2 = ghost2.Dghost;
 var Dlines = lines;
-var Dghost1pos = vec2(0.0, 0.0);
-var Dghost2pos = vec2(0.0, 0.0);
+var Dghost1pos = ghost1.Dghostpos;
+var Dghost2pos = ghost2.Dghostpos;
+var linesIndexes = [0, 1, 1, 2, 2, 3, 3, 0];
 var gl;
 var keyDown = 0,
   keyUp = 0,
@@ -118,9 +121,14 @@ window.onload = function init() {
   //make the dplayer vertices to draw them;
 
   normalizeCoordinates(Dghost1);
+  Dghost1.push(ghost1.tl);
+  Dghost1.push(ghost1.br);
   normalizeCoordinates(Dghost2);
-  normalizeCoordinates(pacman.Dpacman);
+  Dghost2.push(ghost2.tl);
+  Dghost2.push(ghost2.br);
   normalizeCoordinates(Dlines);
+  normalizeCoordinates(pacman.Dpacman);
+
   //add the points to the vertices to be drawn
   for (let i = 0; i < vertices.length; i++)
     for (let j = 0; j < vertices[i].length; j++) Dvertices.push(vertices[i][j]);
@@ -153,15 +161,11 @@ window.onload = function init() {
   }
   //======================================================
 
-  dotsG[4][4].valid = true;
-  dotsG[5][4].valid = true;
   setUpAdjacencyGraph();
   console.log(graph);
   dPx = dots[9][5].position[0] - dots[9][4].position[0];
   dPy = dots[8][5].position[1] - dots[9][5].position[1];
   console.log(dPx, dPy);
-  //bfs(gr, `${(ghost1.row, ghost1.column)}`, `${(pacman.row, pacman.column)}`);
-  // console.log(dfs(graph, "44", "94"));
   // Load shaders and initialize attribute buffers
 
   program = initShaders(gl, "vertex-shader1", "fragment-shader1");
@@ -169,16 +173,17 @@ window.onload = function init() {
 
   requestAnimationFrame(render);
 };
+
 var count = 0;
+
 function render() {
-  //gl.useProgram(program);
   count++;
+
   //to update the points according to the location visited
   // Load the data into the GPU ============================
   //update the draw field
-  // console.log(pacman.Dposition);
-  // console.log(`${ghost1.row}${ghost1.column}`, `${pacman.row}${pacman.column}`);
-  if (count == 30) {
+
+  if (count == 60) {
     if (keyUp == 1) {
       updatePacmanPosition();
     }
@@ -192,6 +197,7 @@ function render() {
       updatePacmanPosition();
     }
     updateGhostPosition(ghost1);
+    updateGhostPosition1(ghost2);
     count = 0;
   }
   ptsToBeDrawn = [];
@@ -226,54 +232,6 @@ function render() {
 
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 
-  //draw a ghost1=========================================================
-  playerBufferId = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, playerBufferId);
-  gl.bufferData(gl.ARRAY_BUFFER, flatten(Dghost1), gl.STATIC_DRAW);
-  var playerPositionAttribLocation = gl.getAttribLocation(program, "vPosition");
-
-  gl.vertexAttribPointer(
-    playerPositionAttribLocation,
-    2,
-    gl.FLOAT,
-    false,
-    0,
-    0
-  );
-  gl.enableVertexAttribArray(playerPositionAttribLocation);
-  var playerSpecialUniform = gl.getUniformLocation(program, "translated");
-  gl.uniform1i(playerSpecialUniform, true);
-  var playerDelta = gl.getUniformLocation(program, "delta");
-  gl.uniform2fv(playerDelta, Dghost1pos);
-  var pointColorUniform = gl.getUniformLocation(program, "vColour");
-  gl.uniform3fv(pointColorUniform, [1.0, 0.0, 0.0]);
-
-  gl.drawArrays(gl.TRIANGLES, 0, 3);
-
-  //draw a ghost2=====================================================
-  playerBufferId = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, playerBufferId);
-  gl.bufferData(gl.ARRAY_BUFFER, flatten(Dghost2), gl.STATIC_DRAW);
-  var playerPositionAttribLocation = gl.getAttribLocation(program, "vPosition");
-
-  gl.vertexAttribPointer(
-    playerPositionAttribLocation,
-    2,
-    gl.FLOAT,
-    false,
-    0,
-    0
-  );
-  gl.enableVertexAttribArray(playerPositionAttribLocation);
-  var playerSpecialUniform = gl.getUniformLocation(program, "translated");
-  gl.uniform1i(playerSpecialUniform, true);
-  var playerDelta = gl.getUniformLocation(program, "delta");
-  gl.uniform2fv(playerDelta, Dghost2pos);
-  var pointColorUniform = gl.getUniformLocation(program, "vColour");
-  gl.uniform3fv(pointColorUniform, [0.0, 1.0, 0.0]);
-
-  gl.drawArrays(gl.TRIANGLES, 0, 3);
-
   //draw points========================================================
   var pointBufferId = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBufferId);
@@ -289,7 +247,56 @@ function render() {
   gl.uniform1i(pointSpecialUniform, false);
   var pointColorUniform = gl.getUniformLocation(program, "vColour");
   gl.uniform3fv(pointColorUniform, [1.0, 0.7, 0.1]);
-  gl.drawArrays(gl.POINTS, 0, Dvertices.length - 1);
+  gl.drawArrays(gl.POINTS, 0, Dvertices.length - 31);
+
+  //draw a ghost1=========================================================
+  ghost1BufferID = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, ghost1BufferID);
+  gl.bufferData(gl.ARRAY_BUFFER, flatten(Dghost1), gl.STATIC_DRAW);
+
+  var ghost1PositionAttribLocation = gl.getAttribLocation(program, "vPosition");
+
+  gl.vertexAttribPointer(
+    ghost1PositionAttribLocation,
+    2,
+    gl.FLOAT,
+    false,
+    0,
+    0
+  );
+  gl.enableVertexAttribArray(ghost1PositionAttribLocation);
+  var ghost1SpecialUniform = gl.getUniformLocation(program, "translated");
+  gl.uniform1i(ghost1SpecialUniform, true);
+  var playerDelta = gl.getUniformLocation(program, "delta");
+  gl.uniform2fv(playerDelta, ghost1.Dghostpos);
+  var ghost1ColorUniform = gl.getUniformLocation(program, "vColour");
+  gl.uniform3fv(ghost1ColorUniform, [1.0, 0.0, 0.0]);
+
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+  //draw a ghost2=====================================================
+  ghost2BufferID = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, ghost2BufferID);
+  gl.bufferData(gl.ARRAY_BUFFER, flatten(Dghost2), gl.STATIC_DRAW);
+  var ghost2PositionAttribLocation = gl.getAttribLocation(program, "vPosition");
+
+  gl.vertexAttribPointer(
+    ghost2PositionAttribLocation,
+    2,
+    gl.FLOAT,
+    false,
+    0,
+    0
+  );
+  gl.enableVertexAttribArray(ghost2PositionAttribLocation);
+  var ghost2SpecialUniform = gl.getUniformLocation(program, "translated");
+  gl.uniform1i(ghost2SpecialUniform, true);
+  var playerDelta = gl.getUniformLocation(program, "delta");
+  gl.uniform2fv(playerDelta, ghost2.Dghostpos);
+  var ghost2ColorUniform = gl.getUniformLocation(program, "vColour");
+  gl.uniform3fv(ghost2ColorUniform, [0.0, 1.0, 0.0]);
+
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
 
   //draw squares================================================
 
@@ -307,11 +314,37 @@ function render() {
     0,
     0
   );
+  var objSpecialUniform = gl.getUniformLocation(program, "translated");
+  gl.uniform1i(objSpecialUniform, false);
   gl.enableVertexAttribArray(squarePositionAttribLocation);
   //draw the obstacles on the field
   var squareColorUniform = gl.getUniformLocation(program, "vColour");
   gl.uniform3fv(squareColorUniform, [0.0, 0.2, 1.0]);
   gl.drawArrays(gl.TRIANGLES, 0, Dsquares.length);
+
+  //draw lines box ==========================================
+  var linesBufferId = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, linesBufferId);
+  gl.bufferData(gl.ARRAY_BUFFER, flatten(Dlines), gl.STATIC_DRAW);
+
+  const indexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+  gl.bufferData(
+    gl.ELEMENT_ARRAY_BUFFER,
+    new Uint16Array(linesIndexes),
+    gl.STATIC_DRAW
+  );
+  // Associate our shader variables with our squares data buffer
+  var linesPositionAttribLocation = gl.getAttribLocation(program, "vPosition");
+  gl.bindBuffer(gl.ARRAY_BUFFER, linesBufferId);
+  gl.vertexAttribPointer(linesPositionAttribLocation, 2, gl.FLOAT, false, 0, 0);
+
+  //draw the obstacles on the field
+  var linesColorUniform = gl.getUniformLocation(program, "vColour");
+  gl.uniform3fv(linesColorUniform, [0.0, 0.2, 1.0]);
+  gl.enableVertexAttribArray(linesPositionAttribLocation);
+  gl.drawElements(gl.LINES, 8, gl.UNSIGNED_SHORT, 0);
+  //gl.drawArrays(gl.LINES, 0, 5);
 
   //run the animation loop
   requestAnimationFrame(render);

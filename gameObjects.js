@@ -34,9 +34,11 @@ class Ghost {
     this.tr = vec2(position[0] + 20, position[1] - 20);
     this.bl = vec2(position[0] - 20, position[1] + 20);
     this.br = vec2(position[0] + 20, position[1] + 20);
+    this.Dghost = [this.tl, this.tr, this.br, this.bl];
     this.score = 0;
     this.row = row;
     this.column = column;
+    this.Dghostpos = vec2(0.0, 0.0);
   }
 }
 //-----------------
@@ -202,8 +204,7 @@ let dots = [
     new Dot(vec2(425, 475), true),
   ],
 ];
-
-var dotsG = [
+let dotsG = [
   //1-st layer
   [
     new Dot(vec2(25, 25), true),
@@ -341,7 +342,7 @@ var graph = {};
 function setUpAdjacencyGraph() {
   for (let i = 0; i < 10; i++)
     for (let j = 0; j < 9; j++) {
-      if (dots[i][j].valid != false) {
+      if (dotsG[i][j].valid != false) {
         if (j != 0)
           if (dotsG[i][j - 1].valid) addEdge(`${i}${j}`, `${i}${j - 1}`);
         if (j != 8)
