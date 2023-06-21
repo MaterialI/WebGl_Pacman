@@ -18,6 +18,22 @@ class Player {
   }
 }
 
+// game
+
+// levels: 1 attack 5 moves cooldown 10 moves
+//         2 attack 10 cooldown 7 moves
+//         3 attack 20 cooldown 5 moves
+
+class Level {
+  constructor() {
+    this.level = 1;
+    this.cooldown = 15;
+    this.aggressive = 5;
+    this.isAggressive = false;
+    this.stateleft = this.cooldown;
+  }
+}
+
 //dots to be eaten
 class Dot {
   constructor(position, valid) {
@@ -373,6 +389,24 @@ function addEdge(value, value1) {
     graph[value1].push(value);
   }
 }
+//level and level of aggression
+var level = new Level();
+function nextLevel() {
+  level.level++;
+  level.cooldown = level.cooldown - 3;
+  level.aggressive += 5;
+  level.stateleft = level.cooldown;
+  level.isAggressive = false;
+}
+
+function flipLevel() {
+  if (level.isAggressive && level.stateleft == 0) {
+    nextLevel();
+  } else if (!level.isAggressive && level.stateleft == 0) {
+    level.isAggressive = true;
+    level.stateleft = level.aggressive;
+  }
+}
 
 export {
   vertices,
@@ -386,4 +420,7 @@ export {
   dotsG,
   graph,
   setUpAdjacencyGraph,
+  nextLevel,
+  flipLevel,
+  level,
 };

@@ -11,6 +11,8 @@ import {
   ghost2,
   setUpAdjacencyGraph,
   graph,
+  level,
+  flipLevel,
 } from "./gameObjects.js";
 import { dfs, updateGhostPosition, updateGhostPosition1 } from "./ghostAI.js";
 // // Global variables
@@ -174,32 +176,41 @@ window.onload = function init() {
   requestAnimationFrame(render);
 };
 
-var count = 0;
+function ghostPacmanCollision(ghost) {
+  if (pacman.row == ghost.row && pacman.column == ghost.column) {
+    return true;
+  }
+  return false;
+}
 
+var count = 0;
+var ghostcount = 0;
 function render() {
   count++;
-
+  console.log("called");
   //to update the points according to the location visited
   // Load the data into the GPU ============================
   //update the draw field
-
-  if (count == 60) {
-    if (keyUp == 1) {
-      updatePacmanPosition();
-    }
-    if (keyDown == 1) {
-      updatePacmanPosition();
-    }
-    if (keyLeft == 1) {
-      updatePacmanPosition();
-    }
-    if (keyRight == 1) {
-      updatePacmanPosition();
-    }
-    updateGhostPosition(ghost1);
-    updateGhostPosition1(ghost2);
-    count = 0;
+  if (level.stateleft == 0) flipLevel();
+  level.stateleft--;
+  if (keyUp == 1) {
+    updatePacmanPosition();
   }
+  if (keyDown == 1) {
+    updatePacmanPosition();
+  }
+  if (keyLeft == 1) {
+    updatePacmanPosition();
+  }
+  if (keyRight == 1) {
+    updatePacmanPosition();
+  }
+  //if (ghostPacmanCollision(ghost1) || ghostPacmanCollision(ghost2)) return;
+  if (updateGhostPosition(ghost1)) console.log("Game over");
+  // if (ghostPacmanCollision(ghost1) || ghostPacmanCollision(ghost2)) return;
+  if (ghostcount > 10) updateGhostPosition1(ghost2);
+
+  ghostcount++;
   ptsToBeDrawn = [];
   for (let i = 0; i < 10; i++)
     for (let j = 0; j < dots[i].length; j++)
@@ -346,8 +357,15 @@ function render() {
   gl.drawElements(gl.LINES, 8, gl.UNSIGNED_SHORT, 0);
   //gl.drawArrays(gl.LINES, 0, 5);
 
+  //conduct the check whether the collision is here with either of the ghosts
+  if (ghostPacmanCollision(ghost1) || ghostPacmanCollision(ghost2)) return;
+  //todo: implement states of the game such as paused,  play, restart
+  //todo: handle the entry of the
+
   //run the animation loop
-  requestAnimationFrame(render);
+  setTimeout(() => {
+    requestAnimationFrame(render);
+  }, 10000 / 20);
 }
 
 export { searchForValidP, Dghost1pos };

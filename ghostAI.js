@@ -1,48 +1,77 @@
-import { pacman, ghost1, ghost2, graph } from "./gameObjects.js";
+import { pacman, ghost1, ghost2, graph, level, dotsG } from "./gameObjects.js";
 import { searchForValidP, Dghost1pos } from "./gameBody.js";
 //const destinationNode = dotsG[pacman.position[0]][pacman.position[1]];
 var path = [];
 var path1 = [];
+level.isAggressive;
 var dPx = 0.2222222222222222;
 var dPy = 0.20000000000000007;
+
 function updateGhostPosition(ghost) {
   //call the path-finding algorithm
-  path = bfs(
-    graph,
-    `${ghost.row}${ghost.column}`,
-    `${pacman.row}${pacman.column}`
-  );
+  //the dfs is not efficient and used for "roaming" of the ghost in non aggressive state
+  //the bfs is following the pacman, thus used for "aggressive" mode
+  if (ghost.column == pacman.column && ghost.row == pacman.row) return true;
+  if (level.isAggressive)
+    path = bfs(
+      graph,
+      `${ghost.row}${ghost.column}`,
+      `${pacman.row}${pacman.column}`
+    );
+  else {
+    if (path.length == 0)
+      path = dfs(
+        graph,
+        `${ghost.row}${ghost.column}`,
+        `${pacman.row}${pacman.column}`
+      );
+  }
+
+  console.log(path);
+
   //fetch a move from list we take from the generated list
-  path.shift();
+  //turn on for bfs
+  if (level.isAggressive) path.shift();
   var move = path.shift();
   //make a move corresponding to the generated move
+
   if (ghost.row - move[0] > 0) {
     ghost.row -= 1;
     ghost.Dghostpos[1] += dPy;
-  }
-  if (ghost.row - move[0] < 0) {
+  } else if (ghost.row - move[0] < 0) {
     ghost.row += 1;
     ghost.Dghostpos[1] -= dPy;
-  }
-  if (ghost.column - move[1] > 0) {
+  } else if (ghost.column - move[1] > 0) {
     ghost.column -= 1;
     ghost.Dghostpos[0] -= dPx;
-  }
-  if (ghost.column - move[1] < 0) {
+  } else if (ghost.column - move[1] < 0) {
     ghost.column += 1;
     ghost.Dghostpos[0] += dPx;
   }
+  return false;
 }
 function updateGhostPosition1(ghost) {
   //call the path-finding algorithm
-  path1 = dfs(
-    graph,
-    `${ghost.row}${ghost.column}`,
-    `${pacman.row}${pacman.column}`
-  );
-  console.log(path1);
+  //call the path-finding algorithm
+  //the dfs is not efficient and used for "roaming" of the ghost in non aggressive state
+  //the bfs is following the pacman, thus used for "aggressive" mode
+  if (ghost.column == pacman.column && ghost.row == pacman.row) return true;
+  if (level.isAggressive)
+    path1 = bfs(
+      graph,
+      `${ghost.row}${ghost.column}`,
+      `${pacman.row}${pacman.column}`
+    );
+  else {
+    if (path1.length == 0)
+      path1 = dfs(
+        graph,
+        `${ghost.row}${ghost.column}`,
+        `${pacman.row}${pacman.column}`
+      );
+  }
   //fetch a move from list we take from the generated list
-  path1.shift();
+  if (level.isAggressive) path1.shift();
   var move = path1.shift();
   //make a move corresponding to the generated move
   if (ghost.row - move[0] > 0) {
@@ -70,6 +99,7 @@ function dfs(graph, start, target, visited = [], path = []) {
   if (start === target) {
     return path;
   }
+  console.log(start);
   for (let neighbor of graph[start]) {
     if (!visited.includes(neighbor)) {
       const result = dfs(graph, neighbor, target, visited, path);
