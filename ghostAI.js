@@ -27,7 +27,7 @@ function updateGhostPosition(ghost) {
       );
   }
 
-  console.log(path);
+  ////console.log(path);
 
   //fetch a move from list we take from the generated list
   //turn on for bfs
@@ -99,7 +99,7 @@ function dfs(graph, start, target, visited = [], path = []) {
   if (start === target) {
     return path;
   }
-  console.log(start);
+  //console.log(start);
   for (let neighbor of graph[start]) {
     if (!visited.includes(neighbor)) {
       const result = dfs(graph, neighbor, target, visited, path);

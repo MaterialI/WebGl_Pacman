@@ -16,7 +16,7 @@ import {
 } from "./gameObjects.js";
 import { dfs, updateGhostPosition, updateGhostPosition1 } from "./ghostAI.js";
 // // Global variables
-console.log(squares);
+//console.log(squares);
 var dPx;
 var dPy;
 var playerBufferId;
@@ -39,6 +39,9 @@ var keyDown = 0,
   keyUp = 0,
   keyLeft = 0,
   keyRight = 0;
+var gameOver = false;
+var gameWon = false;
+var gameScore = 100;
 
 function normalizeCoordinates(array) {
   for (let i = 0; i < array.length; i++) {
@@ -49,14 +52,22 @@ function normalizeCoordinates(array) {
 }
 window.addEventListener("keydown", getKey, false);
 function getKey(key) {
-  if (key.key == "ArrowDown") keyDown = 1;
-  else keyDown = 0;
-  if (key.key == "ArrowUp") keyUp = 1;
-  else keyUp = 0;
-  if (key.key == "ArrowLeft") keyLeft = 1;
-  else keyLeft = 0;
-  if (key.key == "ArrowRight") keyRight = 1;
-  else keyRight = 0;
+  if (key.key == "ArrowDown") {
+    keyDown = 1;
+    render();
+  } else keyDown = 0;
+  if (key.key == "ArrowUp") {
+    keyUp = 1;
+    render();
+  } else keyUp = 0;
+  if (key.key == "ArrowLeft") {
+    keyLeft = 1;
+    render();
+  } else keyLeft = 0;
+  if (key.key == "ArrowRight") {
+    keyRight = 1;
+    render();
+  } else keyRight = 0;
 }
 function searchForValidP(object, dotsArray) {
   if (keyUp == 1) {
@@ -85,21 +96,25 @@ function updatePacmanPosition() {
   if (searchForValidP(pacman, dots)) {
     if (keyUp == 1) {
       pacman.row -= 1;
+      if (!dots[pacman.row][pacman.column].visited) gameScore += 30;
       dots[pacman.row][pacman.column].visited = true;
       pacman.Dposition[1] += dPy;
     }
     if (keyDown == 1) {
       pacman.row += 1;
+      if (!dots[pacman.row][pacman.column].visited) gameScore += 30;
       dots[pacman.row][pacman.column].visited = true;
       pacman.Dposition[1] -= dPy;
     }
     if (keyLeft == 1) {
       pacman.column -= 1;
+      if (!dots[pacman.row][pacman.column].visited) gameScore += 30;
       dots[pacman.row][pacman.column].visited = true;
       pacman.Dposition[0] -= dPx;
     }
     if (keyRight == 1) {
       pacman.column += 1;
+      if (!dots[pacman.row][pacman.column].visited) gameScore += 30;
       dots[pacman.row][pacman.column].visited = true;
       pacman.Dposition[0] += dPx;
     }
@@ -164,10 +179,10 @@ window.onload = function init() {
   //======================================================
 
   setUpAdjacencyGraph();
-  console.log(graph);
+  //console.log(graph);
   dPx = dots[9][5].position[0] - dots[9][4].position[0];
   dPy = dots[8][5].position[1] - dots[9][5].position[1];
-  console.log(dPx, dPy);
+  // console.log(dPx, dPy);
   // Load shaders and initialize attribute buffers
 
   program = initShaders(gl, "vertex-shader1", "fragment-shader1");
@@ -183,16 +198,21 @@ function ghostPacmanCollision(ghost) {
   return false;
 }
 
-var count = 0;
 var ghostcount = 0;
+
 function render() {
-  count++;
-  console.log("called");
+  if (gameWon) return;
+  if (gameOver) return;
+  gameScore -= 10;
+  document.getElementById("gameScore").innerHTML =
+    "Game score:" + `${gameScore}`;
+  // console.log("called");
   //to update the points according to the location visited
   // Load the data into the GPU ============================
   //update the draw field
   if (level.stateleft == 0) flipLevel();
   level.stateleft--;
+
   if (keyUp == 1) {
     updatePacmanPosition();
   }
@@ -205,10 +225,17 @@ function render() {
   if (keyRight == 1) {
     updatePacmanPosition();
   }
-  //if (ghostPacmanCollision(ghost1) || ghostPacmanCollision(ghost2)) return;
-  if (updateGhostPosition(ghost1)) console.log("Game over");
-  // if (ghostPacmanCollision(ghost1) || ghostPacmanCollision(ghost2)) return;
-  if (ghostcount > 10) updateGhostPosition1(ghost2);
+
+  keyDown = 0;
+  keyUp = 0;
+  keyLeft = 0;
+  keyRight = 0;
+
+  updateGhostPosition(ghost1);
+  if (!(ghost1.row == ghost2.row && ghost1.column == ghost2.column)) {
+    //I just dont want to implement the demorgans law here (talking to myself)
+    if (ghostcount > 10) updateGhostPosition1(ghost2);
+  }
 
   ghostcount++;
   ptsToBeDrawn = [];
@@ -358,14 +385,25 @@ function render() {
   //gl.drawArrays(gl.LINES, 0, 5);
 
   //conduct the check whether the collision is here with either of the ghosts
-  if (ghostPacmanCollision(ghost1) || ghostPacmanCollision(ghost2)) return;
+  if (ghostPacmanCollision(ghost1) || ghostPacmanCollision(ghost2)) {
+    document.getElementById("gameState").innerHTML = "Game over";
+    gameOver = true;
+    return;
+  }
+
+  //conduct the check whether the game is over
+  if (ptsToBeDrawn.length == 0) {
+    document.getElementById("gameState").innerHTML = "YOu wOn!";
+    gameWon = true;
+    return;
+  }
   //todo: implement states of the game such as paused,  play, restart
   //todo: handle the entry of the
 
   //run the animation loop
-  setTimeout(() => {
-    requestAnimationFrame(render);
-  }, 10000 / 20);
+  // setTimeout(() => {
+  //   requestAnimationFrame(render);
+  // }, 10000 / 20);
 }
 
 export { searchForValidP, Dghost1pos };
